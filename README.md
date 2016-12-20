@@ -28,11 +28,9 @@ The majority of code in this library is optimized and multithreaded. For example
 * **Mesh Loft**: Creates a welded mesh from lofting polylines that have the same number of control points.
 * **Mesh Pipe:** Quickly pipes polylines. Intended to be similar to "!_ApplyCurvePiping"
 
-
 ### Display ###
 * **Curvature Approximation:** Displays approximate curvature on an immediate-vertex basis only.
 * **Draft Angle Analysis:** Displays draft angles relative to the world plane.
-
 
 ### Isosurfacing ###
 * **Sample Voxels:** Automatically creates a bounding box and grid resolution based on numerical input, and generates a grid of voxel values.
@@ -43,23 +41,6 @@ The majority of code in this library is optimized and multithreaded. For example
 
 ### Smoothing ###
 * **QuickSmooth:** A very fast smoothing algorithm based on laplacian smoothing. Multi-threaded and optimized.
-
-## Performance ##
----
-In a simple benchmark of 40x40x40 cells (64,000 total), sampled to a range of 1.67 cells the results for voxel sampling and surface construction were:
-
-* Cocoon: 2.8s
-* Chromodoris: 0.2s
-* Millipede: 10.1s
-* Dodo: 9.0s
-
-For the smoothing algorithm with a mesh of 400,000 and 1,500,000 faces, and then with 10 iterations:
-
-* Weaverbird's Laplacian Smoothing: 0.65s / 2.6s / 16.8s
-* Chromodoris Quicksmooth: 0.19s / 0.6s / 0.9s
-
-This benchmark files are available on the git repository. However, it is also worth noting that intention of each of these libraries may differ; for example, Cocoon extends it's functionality to include Breps and Curves for sampling, whereas Chromodoris offers only points due to the underlying optimizations. Weaverbird's laplacian smoothing implementation is more sophisticated, but not always needed. Furthermore, as I have completed these benchmarks there may be bias as I am more familiar with my own library; you are invited to execute similar tests and comparisons and post the results.
-
 
 ## Licensing and Credits ##
 ---
