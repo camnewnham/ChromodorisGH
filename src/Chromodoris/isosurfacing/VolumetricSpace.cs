@@ -1,31 +1,10 @@
 ﻿/*
- *      ___  _  _  ____   __   _  _   __  ____   __  ____  __  ____ 
- *     / __)/ )( \(  _ \ /  \ ( \/ ) /  \(    \ /  \(  _ \(  )/ ___)
- *    ( (__ ) __ ( )   /(  O )/ \/ \(  O )) D ((  O ))   / )( \___ \
- *     \___)\_)(_/(__\_) \__/ \_)(_/ \__/(____/ \__/(__\_)(__)(____/
- *
- *    Copyright Cameron Newnham 2015-2016
- *
- *    This program is free software: you can redistribute it and/or modify
- *    it under the terms of the GNU General Public License as published by
- *    the Free Software Foundation, either version 3 of the License, or
- *    (at your option) any later version.
- *
- *    This program is distributed in the hope that it will be useful,
- *    but WITHOUT ANY WARRANTY; without even the implied warranty of
- *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *    GNU General Public License for more details.
- *
- *    You should have received a copy of the GNU General Public License
- *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
+* This algorithm is based on Karsten Schmidt's 'toxiclibs' isosurfacer in Java
+* https://bitbucket.org/postspectacular/toxiclibs
+* Released under the Lesser GPL (LGPL 2.1)
+*/
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Rhino.Geometry;
 
 namespace Chromodoris
 {

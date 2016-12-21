@@ -26,8 +26,6 @@ using KDTree;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using Grasshopper.Kernel.Types;
 
 namespace Chromodoris
 {
