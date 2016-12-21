@@ -12,7 +12,7 @@ Copyright Cameron Newnham 2015-2016
 
 This library is intended for use with Grasshopper, an extension to the 3D software Rhinoceros 3D. The goal of this library is to provide efficient and simple functionality to extend the creation, usage and display of meshes. 
 
-There are multiple available, in-depth and powerful solutions for the majority of what is covered by this library. This is not intended as a replacement, but rather a simple, efficient, and functional alternative.  
+There are multiple available, in-depth and powerful solutions for some of what is covered by this library. This is not intended as a replacement, but rather a simple, efficient, and functional alternative particularly for use in dealing with large quantities of data and geometry.
 
 The majority of code in this library is optimized and multithreaded. For example; the voxel sampling algorithm uses a multi-threaded KD-Tree, and also switches compute modes based on historical performance (between sampling per-voxel, or inverse sampling from points).
 
