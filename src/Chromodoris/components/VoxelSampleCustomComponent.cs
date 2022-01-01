@@ -21,12 +21,10 @@
  *
  */
 
-using System;
-using System.Collections.Generic;
-
 using Grasshopper.Kernel;
 using Rhino.Geometry;
-using Grasshopper.Kernel.Types;
+using System;
+using System.Collections.Generic;
 
 namespace Chromodoris
 {
@@ -73,13 +71,37 @@ namespace Chromodoris
             bool bulge = false;
             bool linear = true;
 
-            if (!DA.GetDataList("Points", points)) return;
+            if (!DA.GetDataList("Points", points))
+            {
+                return;
+            }
+
             DA.GetDataList("Charges", charges); // Optional
-            if (!DA.GetData("Box", ref box)) return;
-            if (!DA.GetData("X Resolution", ref xr)) return;
-            if (!DA.GetData("Y Resolution", ref yr)) return;
-            if (!DA.GetData("Z Resolution", ref zr)) return;
-            if (!DA.GetData("Effective Range", ref range)) return;
+            if (!DA.GetData("Box", ref box))
+            {
+                return;
+            }
+
+            if (!DA.GetData("X Resolution", ref xr))
+            {
+                return;
+            }
+
+            if (!DA.GetData("Y Resolution", ref yr))
+            {
+                return;
+            }
+
+            if (!DA.GetData("Z Resolution", ref zr))
+            {
+                return;
+            }
+
+            if (!DA.GetData("Effective Range", ref range))
+            {
+                return;
+            }
+
             DA.GetData("Density Sampling", ref bulge); // Optional
             DA.GetData("Linear Sampling", ref linear); // Optional
 
@@ -89,38 +111,24 @@ namespace Chromodoris
                 return;
             }
 
-            if (charges.Count != points.Count && charges.Count != 0 && charges.Count != 1) 
+            if (charges.Count != points.Count && charges.Count != 0 && charges.Count != 1)
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "The number of charges should be 0, 1, or equal to the number of points.");
             }
 
             VoxelSampler sampler = new VoxelSampler(points, charges, box, xr, yr, zr, range, bulge, linear);
-            sampler.init();
-            sampler.executeMultiThreaded();
+            sampler.Initialize();
+            sampler.ExecuteMultiThread();
 
-            DA.SetData("Box", sampler.getBox());
-            DA.SetData("Voxel Data", sampler.getData());
-
-            sampler = null;
+            DA.SetData("Box", sampler.Box);
+            DA.SetData("Voxel Data", sampler.Data);
         }
 
 
-        public override GH_Exposure Exposure
-        {
-            get { return GH_Exposure.primary; }
-        }
+        public override GH_Exposure Exposure => GH_Exposure.primary;
 
-        protected override System.Drawing.Bitmap Icon
-        {
-            get
-            {
-                return Chromodoris.Properties.Resources.Icons_Isosurface_Custom;
-            }
-        }
+        protected override System.Drawing.Bitmap Icon => Chromodoris.Properties.Resources.Icons_Isosurface_Custom;
 
-        public override Guid ComponentGuid
-        {
-            get { return new Guid("{CAD3A975-A7C8-44AB-ACF2-D199B9A37C6A}"); }
-        }
+        public override Guid ComponentGuid => new Guid("{CAD3A975-A7C8-44AB-ACF2-D199B9A37C6A}");
     }
 }

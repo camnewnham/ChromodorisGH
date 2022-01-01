@@ -80,7 +80,7 @@ namespace Chromodoris
             HashIsoSurface isosurface = new HashIsoSurface(vs);
             Rhino.Geometry.Mesh mesh = new Rhino.Geometry.Mesh();
             
-            isosurface.computeSurfaceMesh(isovalue, ref mesh);
+            isosurface.ComputeSurfaceMesh(isovalue, ref mesh);
             transformMesh(mesh, box, voxelData);
             DA.SetData(0, mesh);
 

@@ -22,85 +22,84 @@
  */
 
 using Rhino.Geometry;
-using KDTree;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Chromodoris
 {
-    class VoxelSampler
+    internal class VoxelSampler
     {
-        public Box _box;
-        public double xSpace;
-        public double ySpace;
-        public double zSpace;
+        public int xRes;
+        public int yRes;
+        public int zRes;
 
-        public KDTree<int> kdTree;
-        public int _xRes;
-        public int _yRes;
-        public int _zRes;
-        public List<Point3d> _points;
-        public List<double> _values;
-        public double _range;
-        public double _rangeSq;
-        public bool _bulge = false;
-        public bool _linear;
+        private Box box;
+        private double xSpace;
+        private double ySpace;
+        private double zSpace;
 
-        public Transform xfm;
+        private RTree rTree;
+        private List<Point3d> points;
+        private List<double> values;
+        private double range;
+        private double rangeSq;
+        private bool bulge = false;
+        private bool linear;
 
-        public Transform xfmToGrid;
-        public Transform xfmFromGrid;
-        public Transform scaleInv;
-        public bool useXfm = false;
+        private Transform xfm;
+
+        private Transform xfmToGrid;
+        private Transform xfmFromGrid;
+        private bool useXfm = false;
 
 
         public VoxelSampler(List<Point3d> points, List<double> values, double cellSize, double range, bool bulge, bool linear)
         {
-            _points = points;
-            _values = values;
-            _range = range;
-            _rangeSq = _range * _range;
-            _bulge = bulge;
-            _linear = linear;
-            createEnvironment(cellSize, out _box, out _xRes, out _yRes, out _zRes);
+            this.points = points;
+            this.values = values;
+            this.range = range;
+            rangeSq = this.range * this.range;
+            this.bulge = bulge;
+            this.linear = linear;
+            CreateEnvironment(cellSize, out box, out xRes, out yRes, out zRes);
         }
 
         public VoxelSampler(List<Point3d> points, List<double> values, double cellSize, Box box, double range, bool bulge, bool linear)
         {
-            _points = points;
-            _values = values;
-            _range = range;
-            _rangeSq = _range * _range;
-            _bulge = bulge;
-            _linear = linear;
-            createEnvironment(cellSize, box, out _box, out _xRes, out _yRes, out _zRes);
+            this.points = points;
+            this.values = values;
+            this.range = range;
+            rangeSq = this.range * this.range;
+            this.bulge = bulge;
+            this.linear = linear;
+            CreateEnvironment(cellSize, box, out this.box, out xRes, out yRes, out zRes);
 
-            if (_box.Plane.ZAxis != Vector3d.ZAxis || _box.Plane.YAxis != Vector3d.YAxis || _box.Plane.XAxis != Vector3d.XAxis)
+            if (this.box.Plane.ZAxis != Vector3d.ZAxis || this.box.Plane.YAxis != Vector3d.YAxis || this.box.Plane.XAxis != Vector3d.XAxis)
             {
-                xfm = GetBoxTransform(_box, _xRes, _yRes, _zRes);
-                
+                xfm = GetBoxTransform(this.box, xRes, yRes, zRes);
+
                 useXfm = true;
             }
-            
+
         }
 
         public VoxelSampler(List<Point3d> points, List<double> values, Box box, int resX, int resY, int resZ, double range, bool bulge, bool linear)
         {
-            _points = points;
-            _values = values;
-            _range = range;
-            _rangeSq = _range * _range;
-            _bulge = bulge;
-            _linear = linear;
-            _box = box;
-            _box.RepositionBasePlane(box.Center);
-            _xRes = resX;
-            _yRes = resY;
-            _zRes = resZ;
-            if (_box.Plane.ZAxis != Vector3d.ZAxis || _box.Plane.YAxis != Vector3d.YAxis || _box.Plane.XAxis != Vector3d.XAxis)
+            this.points = points;
+            this.values = values;
+            this.range = range;
+            rangeSq = this.range * this.range;
+            this.bulge = bulge;
+            this.linear = linear;
+            this.box = box;
+            this.box.RepositionBasePlane(box.Center);
+            xRes = resX;
+            yRes = resY;
+            zRes = resZ;
+            if (this.box.Plane.ZAxis != Vector3d.ZAxis || this.box.Plane.YAxis != Vector3d.YAxis || this.box.Plane.XAxis != Vector3d.XAxis)
             {
-                xfm = GetBoxTransform(_box, _xRes, _yRes, _zRes);
+                xfm = GetBoxTransform(this.box, xRes, yRes, zRes);
                 useXfm = true;
             }
         }
@@ -110,117 +109,112 @@ namespace Chromodoris
             Box gridBox = new Box(Plane.WorldXY, new Interval(0, x), new Interval(0, y), new Interval(0, z));
             gridBox.RepositionBasePlane(gridBox.Center);
 
-            var trans = Transform.PlaneToPlane(gridBox.Plane, box.Plane);
-            trans = trans * Transform.Scale(gridBox.Plane, box.X.Length / gridBox.X.Length, box.Y.Length / gridBox.Y.Length, box.Z.Length / gridBox.Z.Length);
+            Transform trans = Transform.PlaneToPlane(gridBox.Plane, box.Plane);
+            trans *= Transform.Scale(gridBox.Plane, box.X.Length / gridBox.X.Length, box.Y.Length / gridBox.Y.Length, box.Z.Length / gridBox.Z.Length);
 
             return trans;
 
         }
 
-        public void init()
+        public void Initialize()
         {
-            xSpace = (_box.X.Max - _box.X.Min) / (_xRes - 1);
-            ySpace = (_box.Y.Max - _box.Y.Min) / (_yRes - 1);
-            zSpace = (_box.Z.Max - _box.Z.Min) / (_zRes - 1);
+            xSpace = (box.X.Max - box.X.Min) / (xRes - 1);
+            ySpace = (box.Y.Max - box.Y.Min) / (yRes - 1);
+            zSpace = (box.Z.Max - box.Z.Min) / (zRes - 1);
 
             // fill empty variables
 
-            if (_values.Count == 1)
+            if (values.Count == 1)
             {
-                var val = _values[0];
-                for (int i = 0; i < _points.Count - 1; i++)
+                double val = values[0];
+                for (int i = 0; i < points.Count - 1; i++)
                 {
-                    _values.Add(val);
+                    values.Add(val);
                 }
 
             }
-            else  if (_values.Count < _points.Count)
+            else if (values.Count < points.Count)
             {
-                for (int i = 0; i < _points.Count; i++)
+                for (int i = 0; i < points.Count; i++)
                 {
-                    _values.Add(1);
+                    values.Add(1);
                 }
             }
 
             // make transform from full box to scaled box
             // _box is the big box
-            var _gridbox = new Box(Plane.WorldXY, new Interval(0, _xRes-1), new Interval(0, _yRes-1), new Interval(0, _zRes-1));
+            Box _gridbox = new Box(Plane.WorldXY, new Interval(0, xRes - 1), new Interval(0, yRes - 1), new Interval(0, zRes - 1));
             _gridbox.RepositionBasePlane(_gridbox.Center);
-            xfmToGrid = BoxToBoxTransform(_box, _gridbox);
-            xfmFromGrid = BoxToBoxTransform(_gridbox, _box);
+            xfmToGrid = BoxToBoxTransform(box, _gridbox);
+            xfmFromGrid = BoxToBoxTransform(_gridbox, box);
 
             // forward sample tree init
-            kdTree = new KDTree<int>(3);
+            rTree = new RTree();
             int ind = 0;
-            foreach (Point3d p in _points)
+            foreach (Point3d p in points)
             {
-                double[] pos = { p.X, p.Y, p.Z };
-                kdTree.AddPoint(pos, ind);
+                rTree.Insert(p, ind);
                 ind++;
             }
 
 
-            Gdata = new float[_xRes, _yRes, _zRes];
+            Gdata = new float[xRes, yRes, zRes];
         }
 
         public Transform BoxToBoxTransform(Box source, Box target)
         {
-            var trans = Transform.PlaneToPlane(source.Plane, target.Plane);
-            trans = trans * Transform.Scale(source.Plane, target.X.Length / source.X.Length, target.Y.Length / source.Y.Length, target.Z.Length / source.Z.Length);
+            Transform trans = Transform.PlaneToPlane(source.Plane, target.Plane);
+            trans *= Transform.Scale(source.Plane, target.X.Length / source.X.Length, target.Y.Length / source.Y.Length, target.Z.Length / source.Z.Length);
             return trans;
         }
 
-        public Box getBox()
-        {
-            return _box;
-        }
+        public Box Box => box;
 
-        public float[,,] getData()
-        {
-            return Gdata;
-        }
+        public float[,,] Data => Gdata;
 
-        private void executeSingleThread()
+        private void ExecuteSingleThread()
         {
-            for (int z = 0; z < _zRes; z++)
+            for (int z = 0; z < zRes; z++)
             {
                 assignSection(z);
             }
         }
 
-        public void executeMultiThreaded()
+        public void ExecuteMultiThread()
         {
-            var pLel = new System.Threading.Tasks.ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
-            System.Threading.Tasks.Parallel.ForEach(Enumerable.Range(0, _zRes), pLel, z => assignSection(z));
+            System.Threading.Tasks.ParallelOptions pLel = new System.Threading.Tasks.ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
+            System.Threading.Tasks.Parallel.ForEach(Enumerable.Range(0, zRes), pLel, z => assignSection(z));
         }
 
-        public void executeInverse()
+        public void ExecuteInverse()
         {
-            for (int i=0; i<_points.Count; i++)
+            for (int i = 0; i < points.Count; i++)
             {
                 AssignPointValue(i);
             }
         }
 
-        public void executeInverseMultiThreaded()
+        public void ExecuteInverseMultiThread()
         {
-            var pLel = new System.Threading.Tasks.ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
-            System.Threading.Tasks.Parallel.For(0, _points.Count, pLel, i => AssignPointValue(i));
+            System.Threading.Tasks.ParallelOptions pLel = new System.Threading.Tasks.ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
+            System.Threading.Tasks.Parallel.For(0, points.Count, pLel, i => AssignPointValue(i));
         }
 
         public void AssignPointValue(int i)
         {
-            Point3d p = _points[i];
+            Point3d p = points[i];
             // transform to box space
             Point3d ptX = new Point3d(p);
             ptX.Transform(xfmToGrid);
 
             int[] closeCell = new int[] { (int)ptX.X, (int)ptX.Y, (int)ptX.Z }; // round to find the closest cell
                                                                                 // if the point falls outside the box, skip it
-            if (ptX.X < 0 || ptX.X >= _xRes || ptX.Y < 0 || ptX.Y >= _yRes || ptX.Z < 0 || ptX.Z >= _zRes)
+            if (ptX.X < 0 || ptX.X >= xRes || ptX.Y < 0 || ptX.Y >= yRes || ptX.Z < 0 || ptX.Z >= zRes)
+            {
                 return;
+            }
 
-            if (assignValueFromScaledPoint(ptX, closeCell, _values[i])) // first (center) value was applied
+            if (AssignValueFromScaledPoint(ptX, closeCell, values[i])) // first (center) value was applied
             {
                 // got to here, point is within threshold, and initial value has been applied
                 int indstep = 0;
@@ -234,19 +228,16 @@ namespace Chromodoris
                     List<int[]> neighbours = GetNeighbouringCells(closeCell[0], closeCell[1], closeCell[2], indstep);
                     foreach (int[] cell in neighbours)
                     {
-                        if (assignValueFromScaledPoint(ptX, cell, _values[i]))
+                        if (AssignValueFromScaledPoint(ptX, cell, values[i]))
                         {
                             inprogress = true;
                         }
                     }
                 }
-
-                var test = Gdata;
-                // by here, all values should have been assigned from this point...
             }
         }
 
-        public bool assignValueFromScaledPoint(Point3d ptX, int[] closeCell, double scalar)
+        public bool AssignValueFromScaledPoint(Point3d ptX, int[] closeCell, double scalar)
         {
             // get distance to the cell
             Vector3d closestVec = new Point3d(closeCell[0], closeCell[1], closeCell[2]) - ptX;
@@ -254,44 +245,51 @@ namespace Chromodoris
             // transform vector to world space
             closestVec.Transform(xfmFromGrid);
 
-            if (_linear)
+            if (linear)
             {
                 double len = closestVec.Length;
-                if (len > _range) return false;
+                if (len > range)
+                {
+                    return false;
+                }
                 // assign a value to this cell
-                assignValueToCell(closeCell[0], closeCell[1], closeCell[2], scalar / (len));
+                AssignValuesToCell(closeCell[0], closeCell[1], closeCell[2], scalar / (len));
                 return true;
             }
             else
             {
                 double len = closestVec.SquareLength;
-                if (len > _rangeSq) return false;
-                assignValueToCell(closeCell[0], closeCell[1], closeCell[2], scalar / (len * len));
+                if (len > rangeSq)
+                {
+                    return false;
+                }
+
+                AssignValuesToCell(closeCell[0], closeCell[1], closeCell[2], scalar / (len * len));
                 return true;
             }
 
-           
+
         }
 
         public List<int[]> GetNeighbouringCells(int cx, int cy, int cz, int indstep)
         {
             List<int[]> neighbours = new List<int[]>();
-           
+
             for (int x = (cx) - indstep; x <= (cx) + indstep; x++)
             {
                 for (int y = (cy) - indstep; y <= (cy) + indstep; y++)
                 {
                     for (int z = (cz) - indstep; z <= (cz) + indstep; z++)
                     {
-                        if (!(x < 0 || x >= _xRes || y < 0 || y >= _yRes || z < 0 || z >= _zRes))
+                        if (!(x < 0 || x >= xRes || y < 0 || y >= yRes || z < 0 || z >= zRes))
                         {
                             if (
                                     x == (cx) - indstep
-                                ||  x == (cx) + indstep
-                                ||  y == (cy) - indstep
-                                ||  y == (cy) + indstep
-                                ||  z == (cz) - indstep
-                                ||  z == (cz) + indstep
+                                || x == (cx) + indstep
+                                || y == (cy) - indstep
+                                || y == (cy) + indstep
+                                || z == (cz) - indstep
+                                || z == (cz) + indstep
                                 )
                             {
                                 neighbours.Add(new int[] { x, y, z });
@@ -305,49 +303,46 @@ namespace Chromodoris
             return neighbours;
         }
 
-        public void assignValueToCell(int cx, int cy, int cz, double value)
+        public void AssignValuesToCell(int cx, int cy, int cz, double value)
         {
-            if (_bulge) Gdata[cx, cy, cz] += (float) value; // increment the value
+            if (bulge)
+            {
+                Gdata[cx, cy, cz] += (float)value; // increment the value
+            }
             else
             {
                 if (value > Gdata[cx, cy, cz])
                 {
-                    Gdata[cx, cy, cz] = (float) value; // assign the larger value
+                    Gdata[cx, cy, cz] = (float)value; // assign the larger value
                 }
             }
-        }
-
-        public void invAssignValues()
-        {
-
-
         }
 
         public void assignSection(int z)
         {
             if (!useXfm)
             {
-                double zVal = _box.Z.Min + z * zSpace + _box.Center.Z;
-                for (int y = 0; y < _yRes; y++)
+                double zVal = box.Z.Min + z * zSpace + box.Center.Z;
+                for (int y = 0; y < yRes; y++)
                 {
-                    double yVal = _box.Y.Min + y * ySpace + _box.Center.Y;
-                    for (int x = 0; x < _xRes; x++)
+                    double yVal = box.Y.Min + y * ySpace + box.Center.Y;
+                    for (int x = 0; x < xRes; x++)
                     {
-                        double xVal = _box.X.Min + x * xSpace + _box.Center.X;
-                        double val = assignValues(xVal, yVal, zVal);
+                        double xVal = box.X.Min + x * xSpace + box.Center.X;
+                        double val = AssignValues(xVal, yVal, zVal);
                         Gdata[x, y, z] = (float)val;
                     }
                 }
             }
             else
             {
-                for (int y = 0; y < _yRes; y++)
+                for (int y = 0; y < yRes; y++)
                 {
-                    for (int x = 0; x < _xRes; x++)
+                    for (int x = 0; x < xRes; x++)
                     {
                         Point3d p = new Point3d(x, y, z);
                         p.Transform(xfm); // transform the box point to world coordinates
-                        double val = assignValues(p.X, p.Y, p.Z);
+                        double val = AssignValues(p.X, p.Y, p.Z);
                         Gdata[x, y, z] = (float)val;
                     }
                 }
@@ -356,35 +351,33 @@ namespace Chromodoris
 
         public static float[,,] Gdata;
 
-        public double distanceSquared(double x1, double y1, double z1, double x2, double y2, double z2)
+        public double DistanceSq(double x1, double y1, double z1, double x2, double y2, double z2)
         {
             return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) + (z1 - z2) * (z1 - z2);
         }
 
-        public double distance(double x1, double y1, double z1, double x2, double y2, double z2)
+        public double Distance(double x1, double y1, double z1, double x2, double y2, double z2)
         {
-            return Math.Sqrt(distanceSquared(x1, y1, z1, x2, y2, z2));
+            return Math.Sqrt(DistanceSq(x1, y1, z1, x2, y2, z2));
         }
 
-        public double assignValues(double x, double y, double z)
+        public double AssignValues(double x, double y, double z)
         {
-            double[] pos = { x,y,z };
-            var data = kdTree.NearestNeighbors(pos, 1024, _rangeSq);
+            Sphere searchSphere = new Sphere(new Point3d(x, y, z), range);
             double biggestCharge = 0;
-
-            foreach (int ind in data)
+            rTree.Search(searchSphere, (obj, arg) =>
             {
-                Point3d p = _points[ind];
+                Point3d p = points[arg.Id];
                 double charge = 0;
-                if (!_linear)
+                if (!linear)
                 {
-                    charge = (double)_values[ind] / (double)distanceSquared(p.X, p.Y, p.Z, x, y, z);
+                    charge = (double)values[arg.Id] / (double)DistanceSq(p.X, p.Y, p.Z, x, y, z);
                 }
                 else
                 {
-                    charge = (double)_values[ind] / (double)distance(p.X, p.Y, p.Z, x, y, z);
+                    charge = (double)values[arg.Id] / (double)Distance(p.X, p.Y, p.Z, x, y, z);
                 }
-                if (!_bulge)
+                if (!bulge)
                 {
                     if (charge > biggestCharge)
                     {
@@ -395,28 +388,26 @@ namespace Chromodoris
                 {
                     biggestCharge += charge;
                 }
-            }
+            });
             return biggestCharge;
         }
 
-        public void createEnvironment(double cellSize, out Box box, out int xDim, out int yDim, out int zDim)
+        public void CreateEnvironment(double cellSize, out Box box, out int xDim, out int yDim, out int zDim)
         {
-            box = new Box(Plane.WorldXY, _points);
-            box.Inflate(_range);
+            box = new Box(Plane.WorldXY, points);
+            box.Inflate(range);
             box.RepositionBasePlane(box.Center);
 
             xDim = (int)Math.Floor((double)box.X.Length / (double)cellSize);
             yDim = (int)Math.Floor((double)box.Y.Length / (double)cellSize);
             zDim = (int)Math.Floor((double)box.Z.Length / (double)cellSize);
 
-            double xLen = xDim * cellSize;
-
             box.X = new Interval(-(xDim * cellSize) / 2, (xDim * cellSize) / 2);
             box.Y = new Interval(-(yDim * cellSize) / 2, (yDim * cellSize) / 2);
             box.Z = new Interval(-(zDim * cellSize) / 2, (zDim * cellSize) / 2);
         }
 
-        public void createEnvironment(double cellSize, Box boxIn, out Box box, out int xDim, out int yDim, out int zDim)
+        public void CreateEnvironment(double cellSize, Box boxIn, out Box box, out int xDim, out int yDim, out int zDim)
         {
             box = boxIn;
             box.RepositionBasePlane(box.Center);
@@ -424,8 +415,6 @@ namespace Chromodoris
             xDim = (int)Math.Floor((double)box.X.Length / (double)cellSize);
             yDim = (int)Math.Floor((double)box.Y.Length / (double)cellSize);
             zDim = (int)Math.Floor((double)box.Z.Length / (double)cellSize);
-
-            double xLen = xDim * cellSize;
 
             box.X = new Interval(-(xDim * cellSize) / 2, (xDim * cellSize) / 2);
             box.Y = new Interval(-(yDim * cellSize) / 2, (yDim * cellSize) / 2);

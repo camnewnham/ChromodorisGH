@@ -21,12 +21,10 @@
  *
  */
 
-using System;
-using System.Collections.Generic;
-
 using Grasshopper.Kernel;
 using Rhino.Geometry;
-using Grasshopper.Kernel.Types;
+using System;
+using System.Collections.Generic;
 
 namespace Chromodoris
 {
@@ -67,10 +65,22 @@ namespace Chromodoris
             bool bulge = false;
             bool linear = true;
 
-            if (!DA.GetDataList(0, points)) return;
+            if (!DA.GetDataList(0, points))
+            {
+                return;
+            }
+
             DA.GetDataList(1, charges); // Optional
-            if (!DA.GetData(2, ref cellSize)) return;
-            if (!DA.GetData(3, ref range)) return;
+            if (!DA.GetData(2, ref cellSize))
+            {
+                return;
+            }
+
+            if (!DA.GetData(3, ref range))
+            {
+                return;
+            }
+
             DA.GetData(4, ref bulge); // Optional
             DA.GetData(5, ref linear); // Optional
 
@@ -80,49 +90,35 @@ namespace Chromodoris
                 return;
             }
 
-            if (charges.Count != points.Count && charges.Count != 0 && charges.Count != 1) 
+            if (charges.Count != points.Count && charges.Count != 0 && charges.Count != 1)
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "The number of charges should be 0, 1, or equal to the number of points.");
             }
 
             VoxelSampler sampler = new VoxelSampler(points, charges, cellSize, range, bulge, linear);
-            sampler.init();
+            sampler.Initialize();
 
             // choose execution mode
             // if points < voxels/2, sample from points
             // otherwise sample frm voxels
-            if (points.Count < sampler._xRes * sampler._yRes * sampler._yRes / 2)
+            if (points.Count < sampler.xRes * sampler.yRes * sampler.yRes / 2)
             {
-                sampler.executeInverseMultiThreaded();
+                sampler.ExecuteInverseMultiThread();
             }
             else
             {
-                sampler.executeMultiThreaded();
+                sampler.ExecuteMultiThread();
             }
 
-            DA.SetData(0, sampler.getBox());
-            DA.SetData(1, sampler.getData());
-
-            sampler = null;
+            DA.SetData(0, sampler.Box);
+            DA.SetData(1, sampler.Data);
         }
 
 
-        public override GH_Exposure Exposure
-        {
-            get { return GH_Exposure.primary; }
-        }
+        public override GH_Exposure Exposure => GH_Exposure.primary;
 
-        protected override System.Drawing.Bitmap Icon
-        {
-            get
-            {
-                return Chromodoris.Properties.Resources.Icon_VoxelSample;
-            }
-        }
+        protected override System.Drawing.Bitmap Icon => Chromodoris.Properties.Resources.Icon_VoxelSample;
 
-        public override Guid ComponentGuid
-        {
-            get { return new Guid("{40821789-6a28-41ad-bc33-55d281769713}"); }
-        }
+        public override Guid ComponentGuid => new Guid("{40821789-6a28-41ad-bc33-55d281769713}");
     }
 }

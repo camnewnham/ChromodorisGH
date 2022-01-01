@@ -1,7 +1,5 @@
 ﻿using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Rhino.PlugIns;
 
 
 // General Information about an assembly is controlled through the following 
@@ -34,5 +32,5 @@ using Rhino.PlugIns;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.0.9.0")]
-[assembly: AssemblyFileVersion("0.0.9.0")]
+[assembly: AssemblyVersion("0.0.9.1")]
+[assembly: AssemblyFileVersion("0.0.9.1")]

@@ -5,30 +5,22 @@
 */
 
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Rhino.Geometry;
+using System.Collections.Generic;
 
 namespace Chromodoris
 {
     public class HashIsoSurface
     {
-
-        VolumetricSpace volume;
+        private VolumetricSpace volume;
 
         public double isoValue;
+        private int resX, resY, resZ;
+        private int resX1, resY1, resZ1;
+        private int sliceRes;
+        private Dictionary<int, int> edgeVertices; // int2 is face index
 
-        int resX, resY, resZ;
-        int resX1, resY1, resZ1;
-
-        int sliceRes;
-        int nextXY;
-
-        Dictionary<int, int> edgeVertices; // int2 is face index
-
-        short[] cellIndexCache, prevCellIndexCache;
+        private short[] cellIndexCache, prevCellIndexCache;
 
         public HashIsoSurface(VolumetricSpace volume)
         {
@@ -42,16 +34,15 @@ namespace Chromodoris
             resZ1 = volume.resZ1;
 
             sliceRes = volume.sliceRes;
-            nextXY = resX + sliceRes;
 
             cellIndexCache = new short[sliceRes];
             prevCellIndexCache = new short[sliceRes];
 
-            reset();
+            Reset();
         }
 
 
-        public Mesh computeSurfaceMesh(double iso, ref Rhino.Geometry.Mesh mesh)
+        public Mesh ComputeSurfaceMesh(double iso, ref Rhino.Geometry.Mesh mesh)
         {
             isoValue = iso;
 
@@ -67,7 +58,7 @@ namespace Chromodoris
                     int offset = sliceIndex + sliceOffset;
                     for (int x = 0; x < resX1; x++)
                     {
-                        int cellIndex = getCellIndex(x, y, z);
+                        int cellIndex = GetCellIndex(x, y, z);
                         cellIndexCache[sliceIndex + x] = (short)cellIndex;
                         if (cellIndex > 0 && cellIndex < 255)
                         {
@@ -79,7 +70,7 @@ namespace Chromodoris
                                 double isoDiff = isoValue - offsetData;
                                 if ((edgeFlags & 1) > 0)
                                 {
-                                    double t = isoDiff  / (volume.getVoxelAt(offset + 1) - offsetData);
+                                    double t = isoDiff / (volume.getVoxelAt(offset + 1) - offsetData);
                                     edgeVertices[edgeOffsetIndex] = mesh.Vertices.Add(offsetX + t, y, z);
                                 }
 
@@ -109,18 +100,18 @@ namespace Chromodoris
                 }
                 if (z > 0)
                 {
-                    createFacesForSlice(mesh, z - 1);
+                    CreateFacesForSlice(mesh, z - 1);
                 }
                 short[] tmp = prevCellIndexCache;
                 prevCellIndexCache = cellIndexCache;
                 cellIndexCache = tmp;
-                offsetZ ++;
+                offsetZ++;
             }
-            createFacesForSlice(mesh, resZ1 - 1);
+            CreateFacesForSlice(mesh, resZ1 - 1);
             return mesh;
         }
 
-        private void createFacesForSlice(Rhino.Geometry.Mesh mesh, int z)
+        private void CreateFacesForSlice(Rhino.Geometry.Mesh mesh, int z)
         {
             int[] face = new int[16];
             int sliceOffset = sliceRes * z;
@@ -186,7 +177,7 @@ namespace Chromodoris
             */
         }
 
-        protected int getCellIndex(int x, int y, int z)
+        protected int GetCellIndex(int x, int y, int z)
         {
             int cellIndex = 0;
             int idx = x + y * resX + z * sliceRes;
@@ -231,10 +222,10 @@ namespace Chromodoris
          * be called inbetween successive calls to
          * {@link #computeSurfaceMesh(Mesh, double)}.
          */
-        public void reset()
+        public void Reset()
         {
             edgeVertices = new Dictionary<int, int>(
-                    (int)(resX * resY * 10));
+                    resX * resY * 10);
         }
     }
 }
