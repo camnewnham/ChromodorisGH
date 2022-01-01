@@ -4,7 +4,7 @@
 ( (__ ) __ ( )   /(  O )/ \/ \(  O )) D ((  O ))   / )( \___ \
  \___)\_)(_/(__\_) \__/ \_)(_/ \__/(____/ \__/(__\_)(__)(____/
 
-Copyright Cameron Newnham 2015-2016
+Copyright Cameron Newnham 2015-2022
 ~~~
 ## General ##
 ---
@@ -63,10 +63,6 @@ The majority of code in this library is optimized and multithreaded. For example
 ### Credits ###
 
 This library extends and implements the following libraries:
-
-#### kd-sharp (for KDTree spatial searching) ####
-MIT License, https://code.google.com/archive/p/kd-sharp/
-Distributed as a compiled DLL, however the exact source code is available upon request.
 
 #### toxiclibs volume (for isosurfacing) ####
 LGPL, Karsten Schmidt. https://bitbucket.org/postspectacular/toxiclibs
